@@ -32,20 +32,6 @@ build_settings:
   output_directory: ""
   skip_release_command: false
 cronjobs: {}
-databases:
-  db:
-    type: postgresql_17
-services:
-  beat:
-    command: bash celery-beat.sh
-    scale: 1
-  release:
-    command: bash release.sh
-    scale: 1
-  web:
-    command: bash web.sh
-    scale: 1
-  worker:
-    command: bash celery-worker.sh
-    scale: 1
+databases: {}
+services: {}
 volumes: {}
