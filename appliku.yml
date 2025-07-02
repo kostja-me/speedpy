@@ -1,32 +1,51 @@
 build_settings:
-  build_command: npm i && npm run tailwind:build
-  build_image: python-3.13-node-20.18
-  environment_variables:
-  - from_database:
-      name: db
-      property: private_connection_url
-    name: DATABASE_URL
-  - from_database:
-      name: redis
-      property: private_connection_url
-    name: REDIS_URL
+  build_command: ""
+  build_image: custom
+  container_port: null
+  custom_dockerfile:
+    "FROM python:3.12.3-bullseye\nSHELL [\"/bin/bash\", \"-c\"]\n\
+    ENV PIP_NO_CACHE_DIR off\nENV PIP_DISABLE_PIP_VERSION_CHECK on\nENV PYTHONUNBUFFERED\
+    \ 1\nENV PYTHONDONTWRITEBYTECODE 0\nRUN apt-get update \\\n && apt-get install\
+    \ -y --force-yes \\\n nano python3-pip gettext chrpath libssl-dev libxft-dev \\\
+    \n libfreetype6 libfreetype6-dev  libfontconfig1 libfontconfig1-dev\\\n && rm\
+    \ -rf /var/lib/apt/lists/*\nENV NODE_VERSION=20.10.0\nENV NVM_DIR=/root/.nvm\n\
+    RUN apt install -y curl\nRUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.39.7/install.sh\
+    \ | bash\nRUN . \"$NVM_DIR/nvm.sh\" && nvm install ${NODE_VERSION}\nRUN . \"$NVM_DIR/nvm.sh\"\
+    \ && nvm use v${NODE_VERSION}\nRUN . \"$NVM_DIR/nvm.sh\" && nvm alias default\
+    \ v${NODE_VERSION}\nENV PATH=\"/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}\"\
+    \nRUN node --version\nRUN npm --version\nRUN npm install --global yarn@1.22.21\n\
+    RUN pip install --upgrade pip && pip install --upgrade setuptools && pip install\
+    \ gunicorn\nWORKDIR /code/\nCOPY ./code/requirements.txt /code/\nRUN pip install\
+    \ -r requirements.txt\nCOPY ./code/ /code/\nCOPY ./env/ /env/\nRUN source /env/envs_export.sh\
+    \ && if [ -n \"$BUILD_COMMAND\" ]; then eval $BUILD_COMMAND; fi\nRUN source /env/envs_export.sh\
+    \ && export && if [ -f \"manage.py\" ]; then if [ \"$DISABLE_COLLECTSTATIC\" ==\
+    \ \"1\" ]; then echo \"collect static disabled\"; else echo \"Found manage.py,\
+    \ running collectstatic\" && python manage.py collectstatic --noinput; fi;  else\
+    \ echo \"No manage.py found. Skipping collectstatic.\"; fi;\nRUN useradd -ms /bin/bash\
+    \ code\nUSER code"
+  dockerfile: Dockerfile
+  dockerfile_context_path: ""
+  dockerfile_path: Dockerfile
+  environment_variables: []
   expose_web_port: false
   is_static_site: false
-  output_directory: ''
+  output_directory: ""
   skip_release_command: false
 cronjobs: {}
 databases:
   db:
     type: postgresql_17
-  redis:
-    type: redis_7
 services:
   beat:
     command: bash celery-beat.sh
+    scale: 1
   release:
     command: bash release.sh
+    scale: 1
   web:
     command: bash web.sh
+    scale: 1
   worker:
     command: bash celery-worker.sh
+    scale: 1
 volumes: {}
